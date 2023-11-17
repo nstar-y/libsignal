@@ -34,7 +34,7 @@ function scrubPubKeyFormat(pubKey) {
     if (pubKey.byteLength == 33) {
         return pubKey.slice(1);
     } else {
-        console.error("WARNING: Expected pubkey of length 33, please report the ST and client that generated the pubkey");
+        //error("WARNING: Expected pubkey of length 33, please report the ST and client that generated the pubkey");
         return pubKey;
     }
 }

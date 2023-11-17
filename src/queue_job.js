@@ -1,9 +1,9 @@
 // vim: ts=4:sw=4:expandtab
- 
- /*
-  * jobQueue manages multiple queues indexed by device to serialize
-  * session io ops on the database.
-  */
+
+/*
+ * jobQueue manages multiple queues indexed by device to serialize
+ * session io ops on the database.
+ */
 'use strict';
 
 
@@ -12,13 +12,14 @@ const _gcLimit = 10000;
 
 async function _asyncQueueExecutor(queue, cleanup) {
     let offt = 0;
-    while (true) {
+
+    async function execute() {
         let limit = Math.min(queue.length, _gcLimit); // Break up thundering hurds for GC duty.
         for (let i = offt; i < limit; i++) {
             const job = queue[i];
             try {
                 job.resolve(await job.awaitable());
-            } catch(e) {
+            } catch (e) {
                 job.reject(e);
             }
         }
@@ -30,24 +31,24 @@ async function _asyncQueueExecutor(queue, cleanup) {
             } else {
                 offt = limit;
             }
+            execute(); // Execute rekursif setelah selesai di dalam call stack.
         } else {
-            break;
+            return cleanup();
         }
     }
-    cleanup();
+
+    execute();
 }
 
-module.exports = function(bucket, awaitable) {
+module.exports = function (bucket, awaitable) {
     /* Run the async awaitable only when all other async calls registered
      * here have completed (or thrown).  The bucket argument is a hashable
      * key representing the task queue to use. */
     if (!awaitable.name) {
         // Make debuging easier by adding a name to this function.
-        Object.defineProperty(awaitable, 'name', {writable: true});
+        Object.defineProperty(awaitable, 'name', { writable: true });
         if (typeof bucket === 'string') {
             awaitable.name = bucket;
-        } else {
-            console.warn("Unhandled bucket type (for naming):", typeof bucket, bucket);
         }
     }
     let inactive;

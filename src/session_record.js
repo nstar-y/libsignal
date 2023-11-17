@@ -170,9 +170,9 @@ const migrations = [{
         } else {
             for (const key in sessions) {
                 if (sessions[key].indexInfo.closed === -1) {
-                    console.error('V1 session storage migration error: registrationId',
-                                  data.registrationId, 'for open session version',
-                                  data.version);
+                    /*console.error('V1 session storage migration error: registrationId',
+                        data.registrationId, 'for open session version',
+                        data.version);*/
                 }
             }
         }
@@ -190,7 +190,7 @@ class SessionRecord {
         let run = (data.version === undefined);
         for (let i = 0; i < migrations.length; ++i) {
             if (run) {
-                console.info("Migrating session to:", migrations[i].version);
+                //console.info("Migrating session to:", migrations[i].version);
                 migrations[i].migrate(data);
             } else if (migrations[i].version === data.version) {
                 run = true;
@@ -267,18 +267,18 @@ class SessionRecord {
 
     closeSession(session) {
         if (this.isClosed(session)) {
-            console.warn("Session already closed", session);
+            //console.warn("Session already closed", session);
             return;
         }
-        console.info("Closing session:", session);
+        //console.info("Closing session:", session);
         session.indexInfo.closed = Date.now();
     }
 
     openSession(session) {
         if (!this.isClosed(session)) {
-            console.warn("Session already open");
+            //console.warn("Session already open");
         }
-        console.info("Opening session:", session);
+        //console.info("Opening session:", session);
         session.indexInfo.closed = -1;
     }
 
@@ -287,21 +287,30 @@ class SessionRecord {
     }
 
     removeOldSessions() {
-        while (Object.keys(this.sessions).length > CLOSED_SESSIONS_MAX) {
+        const sessionKeys = Object.keys(this.sessions);
+        const sessionsLength = sessionKeys.length;
+
+        for (let i = 0; i < sessionsLength && sessionsLength > CLOSED_SESSIONS_MAX; i++) {
             let oldestKey;
             let oldestSession;
-            for (const [key, session] of Object.entries(this.sessions)) {
+            for (const key of sessionKeys) {
+                if (!key) continue
+                const session = this.sessions[key];
                 if (session.indexInfo.closed !== -1 &&
                     (!oldestSession || session.indexInfo.closed < oldestSession.indexInfo.closed)) {
                     oldestKey = key;
                     oldestSession = session;
+                    break;
                 }
             }
+
             if (oldestKey) {
-                console.info("Removing old closed session:", oldestSession);
+                //console.info("Removing old closed session:", oldestSession);
                 delete this.sessions[oldestKey];
+                sessionKeys.splice(sessionKeys.indexOf(oldestKey), 1);
             } else {
-                throw new Error('Corrupt sessions object');
+                continue
+                // throw new Error('Corrupt sessions object');
             }
         }
     }
